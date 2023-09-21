@@ -117,6 +117,14 @@ defmodule InkTest do
     assert %{"msg" => "this is [FILTERED]"} = Jason.decode!(msg)
   end
 
+  test "it filters preconfigured secret strings under a struct" do
+    some_value = %TestStruct{nested_struct: %TestStruct.NestedStruct{another_field: "this is another moep"}}
+    Logger.info("this is moep", some_value: some_value)
+
+    assert_receive {:io_request, _, _, {:put_chars, :unicode, msg}}
+    assert %{"msg" => "this is [FILTERED]", "some_value" => %{"field" => nil, "nested_struct" => "this is another [FILTERED] impl inspect"}} = Jason.decode!(msg)
+  end
+
   test "it filters secret strings" do
     Logger.configure_backend(Ink, filtered_strings: ["SECRET", "", nil])
     Logger.info("this is a SECRET string")

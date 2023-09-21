@@ -16,6 +16,7 @@ defmodule Ink.Mixfile do
       package: package(),
       deps: deps(),
       aliases: aliases(),
+      elixirc_paths: elixirc_paths(Mix.env()),
       docs: docs()
     ]
   end
@@ -28,6 +29,9 @@ defmodule Ink.Mixfile do
     """
     """
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 
   defp package do
     [

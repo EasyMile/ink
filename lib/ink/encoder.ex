@@ -21,9 +21,15 @@ defmodule Ink.Encoder do
        do: inspect(value)
 
   defp encode_value(%{__struct__: _} = value) do
-    value
-    |> Map.from_struct()
-    |> encode_value
+    case Inspect.impl_for(value) do
+      Inspect.Any ->
+        value
+        |> Map.from_struct()
+        |> encode_value
+
+      _ ->
+        inspect(value)
+    end
   end
 
   defp encode_value(value) when is_map(value) do
