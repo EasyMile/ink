@@ -20,11 +20,12 @@ defmodule Ink.Encoder do
               is_tuple(value) or is_function(value),
        do: inspect(value)
 
-  defp encode_value(%{__struct__: _} = value) do
+  defp encode_value(%{__struct__: struct} = value) do
     case Inspect.impl_for(value) do
       Inspect.Any ->
         value
         |> Map.from_struct()
+        |> Map.put("__struct__", struct)
         |> encode_value
 
       _ ->

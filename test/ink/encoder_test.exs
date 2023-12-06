@@ -35,12 +35,12 @@ defmodule Ink.EncoderTest do
   end
 
   test "it recursively encodes struct" do
-    assert {:ok, ~s({"field":{"pid":"#PID<0.250.0>"},"nested_struct":null})} ==
+    assert {:ok, ~s({"field":{"pid":"#PID<0.250.0>"},"nested_struct":null,"__struct__":"Elixir.TestStruct"})} ==
              Ink.Encoder.encode(%TestStruct{field: %{pid: :c.pid(0, 250, 0)}})
   end
 
   test "it recursively encodes struct and respect Inspect impl" do
-    assert {:ok, ~s({"field":{"pid":"#PID<0.250.0>"},"nested_struct":"some value impl inspect"})} ==
+    assert {:ok, ~s({"field":{"pid":"#PID<0.250.0>"},"nested_struct":"some value impl inspect","__struct__":"Elixir.TestStruct"})} ==
              Ink.Encoder.encode(%TestStruct{field: %{pid: :c.pid(0, 250, 0)}, nested_struct: %TestStruct.NestedStruct{another_field: "some value"}})
   end
 
