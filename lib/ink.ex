@@ -80,6 +80,8 @@ defmodule Ink do
 
   @behaviour :gen_event
 
+  @default_domain_censored_message "msg not display for this domain"
+
   def init(__MODULE__) do
     {:ok, configure(Application.get_env(:logger, Ink, []), default_options())}
   end
@@ -122,6 +124,7 @@ defmodule Ink do
   defp log_message(message, level, timestamp, metadata, config) do
     if Logger.compare_levels(level, config.level) != :lt do
       message
+      |> filter_by_domain(config, metadata)
       |> base_map(timestamp, level, config)
       |> Map.merge(process_metadata(metadata, config))
       |> Ink.Encoder.encode()
@@ -129,12 +132,36 @@ defmodule Ink do
     end
   end
 
+  defp filter_by_domain(message, %{domain: nil} , _), do: message
+  defp filter_by_domain(message, config, metadata) do
+    config_domain = config.domain
+    metadata_domain = metadata[:domain]
+
+    if metadata_domain != nil do
+      domain_allowed = metadata_domain |> Enum.filter(fn x -> Enum.member?(config_domain, x) end )
+      if Enum.empty?(domain_allowed) do
+        @default_domain_censored_message
+      else
+        message
+      end
+    else
+      message
+    end
+  end
+
   defp process_metadata(metadata, config) do
     metadata
     |> filter_metadata(config)
+    |> filter_metadata_excluded(config)
     |> rename_metadata_fields
     |> Enum.into(%{})
     |> Map.delete(:time)
+  end
+
+  defp filter_metadata_excluded(metadata, %{metadata_excluded: nil}), do: metadata
+
+  defp filter_metadata_excluded(metadata, config) do
+    metadata |> Enum.filter(fn {key, _} -> key not in config.metadata_excluded end)
   end
 
   defp filter_metadata(metadata, %{metadata: nil}), do: metadata
@@ -233,6 +260,8 @@ defmodule Ink do
       secret_strings: [],
       io_device: :stdio,
       metadata: nil,
+      metadata_excluded: nil,
+      domain: nil,
       exclude_hostname: false,
       log_encoding_error: true
     }
