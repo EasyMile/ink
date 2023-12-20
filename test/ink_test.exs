@@ -79,6 +79,47 @@ defmodule InkTest do
     assert 1 == decoded_msg["included"]
   end
 
+  test "it excludes configured metadata" do
+    Logger.configure_backend(Ink, metadata_excluded: [:not_included])
+    Logger.metadata(not_included: 1, included: 1)
+    Logger.info("test")
+
+    assert_receive {:io_request, _, _, {:put_chars, :unicode, msg}}
+    decoded_msg = Jason.decode!(msg)
+    assert nil == decoded_msg["not_included"]
+    assert 1 == decoded_msg["included"]
+  end
+
+  test "it when no domain configured" do
+    Logger.configure_backend(Ink, domain: nil)
+    Logger.configure_backend(Ink, level: :info)
+    Logger.info("test")
+
+    assert_receive {:io_request, _, _, {:put_chars, :unicode, msg}}
+    decoded_msg = Jason.decode!(msg)
+    assert "test" == decoded_msg["msg"]
+  end
+
+  test "it only includes configured domain" do
+    Logger.configure_backend(Ink, domain: [:elixir])
+    Logger.configure_backend(Ink, level: :info)
+    Logger.info("test")
+
+    assert_receive {:io_request, _, _, {:put_chars, :unicode, msg}}
+    decoded_msg = Jason.decode!(msg)
+    assert "test" == decoded_msg["msg"]
+  end
+
+  test "it exclude not configured domain" do
+    Logger.configure_backend(Ink, domain: [:bad_domain])
+    Logger.configure_backend(Ink, level: :info)
+    Logger.info("test")
+
+    assert_receive {:io_request, _, _, {:put_chars, :unicode, msg}}
+    decoded_msg = Jason.decode!(msg)
+    assert "msg not display for this domain" == decoded_msg["msg"]
+  end
+
   test "it puts the erlang process pid into erlang_pid" do
     Logger.info("test")
 
